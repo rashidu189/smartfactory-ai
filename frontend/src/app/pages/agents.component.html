@@ -1,0 +1,35 @@
+<section class="panel">
+  <div class="step"><span>✦</span> AI agents <small>Investigator → Planner → Coordinator → human approval → Verifier</small></div>
+  <div class="agent-flow">
+    <div><b>Investigator</b><span>Gemini calls data tools (KPIs, anomalies, Pareto, ML, bottlenecks) and proposes cited root-cause hypotheses.</span></div>
+    <div><b>Planner</b><span>Turns them into a prioritised corrective-action plan with owners, due dates and how to verify.</span></div>
+    <div><b>Coordinator</b><span>Code, not AI: checks citations and routes each action by policy — Supervisor, or Supervisor + Plant manager.</span></div>
+    <div><b>People</b><span>Approve or reject with a comment. Agents never approve or execute anything.</span></div>
+    <div><b>Verifier</b><span>Compares the evidence before and after to confirm the result.</span></div>
+  </div>
+  <div class="alert info" *ngIf="!(state.config$ | async)?.gemini_configured">
+    Gemini is not configured, so agents run in transparent rule-based mode. Configure Vertex AI to use Gemini agents.</div>
+  <div class="ask mt">
+    <select [(ngModel)]="pick" aria-label="Evidence to investigate" class="grow">
+      <option *ngFor="let f of evidence" [value]="f.id">{{ f.id }} · {{ f.title }}</option>
+    </select>
+    <button class="btn primary" (click)="start()" [disabled]="busy || !pick"><span *ngIf="busy" class="spinner"></span>{{ busy ? 'Agents working…' : 'Start investigation' }}</button>
+  </div>
+  <p class="empty" *ngIf="!evidence.length">No evidence to investigate yet — load data first.</p>
+  <div class="alert error" *ngIf="error">{{ error }}</div>
+</section>
+
+<section class="panel">
+  <div class="step"><span>☰</span> Workflows</div>
+  <div class="table-wrap flush">
+    <table *ngIf="workflows.length; else none">
+      <thead><tr><th>Started</th><th>Evidence</th><th>Status</th><th>Mode</th><th class="num">Awaiting approval</th><th>By</th></tr></thead>
+      <tbody><tr *ngFor="let w of workflows" class="clickable" [routerLink]="['/agents', w.id]">
+        <td class="nowrap">{{ w.created_at | date: 'short' }}</td>
+        <td><app-cites [ids]="[w.finding_id]"></app-cites> {{ w.finding_title }}</td>
+        <td><span class="status-pill" [ngClass]="'status-' + w.status">{{ w.status.replace('_', ' ') }}</span></td>
+        <td>{{ w.mode }}</td><td class="num">{{ w.pending_approvals }}</td><td>{{ w.requested_by || '–' }}</td></tr></tbody>
+    </table>
+    <ng-template #none><p class="empty">No workflows yet.</p></ng-template>
+  </div>
+</section>

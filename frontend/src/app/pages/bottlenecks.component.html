@@ -1,0 +1,53 @@
+<section class="panel">
+  <div class="step"><span>⧗</span> Production bottlenecks · {{ data?.horizon_days || 7 }}-day forecast
+    <small>constraint station per line (highest load) · projected capacity vs ERP demand</small>
+    <span class="tag synthetic push" *ngIf="data?.synthetic">Synthetic station &amp; ERP data</span></div>
+  <div class="alert info" *ngIf="data && !data.lines.length">No station data yet. Load the full demo on the <a routerLink="/data">Data</a> page or upload station records below.</div>
+  <div class="alert info" *ngIf="message">{{ message }}</div>
+  <div class="alert error" *ngIf="error">{{ error }}</div>
+
+  <div class="line-cards" *ngIf="data?.lines?.length">
+    <button class="line-card" *ngFor="let l of data!.lines" [class.on]="l.line === line" [class.bad]="l.shortfall_units > 0" (click)="line = l.line; draw()">
+      <strong>{{ l.line }}</strong>
+      <span class="small">Constraint: {{ l.constraint_station }}</span>
+      <span class="num big">{{ l.constraint_utilisation_pct | number: '1.0-0' }}%</span>
+      <span class="small" *ngIf="l.has_demand">{{ l.shortfall_units > 0 ? ('short ' + (l.shortfall_units | number: '1.0-0') + ' units') : 'meets demand' }}</span>
+    </button>
+  </div>
+
+  <div class="charts" *ngIf="lineData as l">
+    <div class="chart-box">
+      <div class="chart-head"><h3>{{ l.line }}: capacity vs demand</h3>
+        <span class="small muted">forecast from {{ data!.forecast_from }}</span></div>
+      <app-chart *ngIf="forecastChart" [config]="forecastChart" [height]="280"></app-chart>
+    </div>
+    <div class="chart-box">
+      <div class="chart-head"><h3>Station load (constraint in red)</h3></div>
+      <app-chart *ngIf="stationChart" [config]="stationChart" [height]="180"></app-chart>
+      <table class="mini mt">
+        <thead><tr><th>Station</th><th class="num">Cap./day</th><th class="num">WIP</th><th class="num">Cycle s</th><th class="num">Trend</th></tr></thead>
+        <tbody><tr *ngFor="let s of stations" [class.current]="s.is_constraint">
+          <td>{{ s.station }}</td><td class="num">{{ s.capacity_per_day | number: '1.0-0' }}</td><td class="num">{{ s.wip_units | number: '1.0-0' }}</td>
+          <td class="num">{{ s.cycle_time_s }}</td>
+          <td class="num small">{{ s.trend.capacity_per_day > 0 ? '+' : '' }}{{ s.trend.capacity_per_day }} cap/d · WIP {{ s.trend.wip_units > 0 ? '+' : '' }}{{ s.trend.wip_units }}/d</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="row-actions">
+    <label class="btn ghost">Upload station records<input type="file" hidden accept=".csv,.xlsx" (change)="upload('capacity/stations', $event)"></label>
+    <label class="btn ghost">Upload ERP work orders<input type="file" hidden accept=".csv,.xlsx" (change)="upload('capacity/work-orders', $event)"></label>
+    <button class="btn ghost" (click)="toggleOrders()">{{ showOrders ? 'Hide' : 'Show' }} work orders ({{ data?.work_orders || 0 }})</button>
+  </div>
+  <div class="table-wrap" *ngIf="showOrders">
+    <table>
+      <thead><tr><th>Order</th><th>Line</th><th>Product</th><th class="num">Qty</th><th>Due</th><th>Status</th><th>Source</th></tr></thead>
+      <tbody><tr *ngFor="let o of orders"><td>{{ o.order_id }}</td><td>{{ o.line }}</td><td>{{ o.product }}</td><td class="num">{{ o.quantity | number: '1.0-0' }}</td>
+        <td>{{ o.due_date }}</td><td>{{ o.status }}</td><td>{{ o.source }}</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel" *ngIf="data?.findings?.length">
+  <div class="step"><span>B</span> Bottleneck evidence <small>projections, not guarantees · “Investigate” lets the agents propose re-planning for approval</small></div>
+  <app-findings-list [findings]="data!.findings" [highlight]="highlight"></app-findings-list>
+</section>

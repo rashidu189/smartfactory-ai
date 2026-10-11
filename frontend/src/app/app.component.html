@@ -1,0 +1,47 @@
+<header class="topbar">
+  <button class="menu-btn" (click)="menuOpen = !menuOpen" aria-label="Menu">☰</button>
+  <a class="brand" routerLink="/overview">
+    <span class="mark" aria-hidden="true"></span>
+    <div><h1>SmartFactory AI</h1><p>Intelligent manufacturing assistant</p></div>
+  </a>
+  <div class="status-row" *ngIf="state.config$ | async as c; else offline">
+    <span class="pill" [class.on]="c.gemini_configured" [class.off]="!c.gemini_configured">
+      {{ c.gemini_configured ? 'Gemini · ' + c.model + (c.vertex_ai ? ' (Vertex AI)' : '') : 'Gemini off · rule-based mode' }}</span>
+    <span class="pill">DB · {{ c.database === 'mssql' ? 'SQL Server' : c.database }}</span>
+  </div>
+  <ng-template #offline><span class="pill">API unreachable</span></ng-template>
+  <div class="who">
+    <input type="text" [(ngModel)]="name" (change)="saveUser()" placeholder="Your name" maxlength="100" aria-label="Your name">
+    <select [(ngModel)]="role" (ngModelChange)="saveUser()" aria-label="Your role">
+      <option *ngFor="let r of roles" [value]="r[0]">{{ r[1] }}</option>
+    </select>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="sidebar" [class.open]="menuOpen">
+    <div class="nav-group" *ngFor="let g of nav">
+      <div class="nav-title">{{ g.group }}</div>
+      <a *ngFor="let i of g.items" [routerLink]="i.path" routerLinkActive="active" [class.dim]="i.needsData && !(state.dataset$ | async)">
+        {{ i.label }}
+        <span class="count" *ngIf="i.badge === 'approvals' && pendingForMe(state.actions$ | async) as n">{{ n }}</span>
+      </a>
+    </div>
+    <div class="nav-foot small">Identity is a prototype selector. Use IAP / Firebase Auth in production.</div>
+  </nav>
+
+  <main>
+    <div class="dataset-bar" *ngIf="state.dataset$ | async as d">
+      <span class="tag synthetic" *ngIf="d.synthetic">Synthetic demo data</span>
+      <span>Dataset <strong>{{ d.name }}</strong></span>
+      <span>· {{ d.analysis.overall.date_from }} → {{ d.analysis.overall.date_to }} · {{ d.analysis.overall.lines.length }} lines ·
+        {{ d.analysis.overall.records | number }} records</span>
+      <a class="link small" routerLink="/data">change</a>
+    </div>
+    <div class="alert warn" *ngIf="(state.dataset$ | async)?.warnings?.length">
+      <div *ngFor="let w of (state.dataset$ | async)!.warnings">{{ w }}</div>
+    </div>
+    <router-outlet></router-outlet>
+    <footer>SmartFactory AI · numbers, anomalies, forecasts and ML scores are computed in code; Gemini explains, investigates and plans, and must cite evidence IDs. People approve.</footer>
+  </main>
+</div>

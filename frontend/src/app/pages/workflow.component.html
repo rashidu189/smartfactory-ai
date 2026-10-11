@@ -1,0 +1,62 @@
+<section class="panel" *ngIf="wf as w">
+  <div class="step"><span>✦</span> Workflow · <app-cites [ids]="[w.finding_id]"></app-cites> {{ w.finding_title }}
+    <span class="status-pill push" [ngClass]="'status-' + w.status">{{ w.status.replace('_', ' ') }}</span></div>
+  <p class="small muted">Started {{ w.created_at | date: 'medium' }} by {{ w.requested_by || 'unknown' }} ·
+    agents ran in <b>{{ w.mode === 'gemini' ? 'Gemini' : 'rule-based' }}</b> mode<span *ngIf="w.plan.objective"> · objective: {{ w.plan.objective }}</span></p>
+  <div class="alert warn" *ngIf="w.plan.note">{{ w.plan.note }}</div>
+  <a routerLink="/agents" class="link small">← all workflows</a>
+
+  <ol class="timeline">
+    <li *ngFor="let s of w.steps" [ngClass]="'ag-' + s.agent">
+      <div class="tl-head"><b>{{ s.agent }}</b> <span class="tag low">{{ s.mode }}</span> <span class="small muted">{{ s.description }}</span></div>
+
+      <ng-container [ngSwitch]="s.agent">
+        <div *ngSwitchCase="'Investigator'">
+          <p>{{ s.output.summary }}</p>
+          <div class="item" *ngFor="let h of s.output.hypotheses">
+            <div class="meta"><app-tag [kind]="h.kind"></app-tag><app-tag kind="low" [label]="h.confidence + ' confidence'"></app-tag><app-cites [ids]="h.evidence_ids"></app-cites></div>
+            <div>{{ h.statement }}</div>
+            <div class="r small" *ngIf="h.how_to_verify">Verify: {{ h.how_to_verify }}</div>
+          </div>
+          <p class="small" *ngIf="s.output.related_evidence_ids?.length">Related evidence: <app-cites [ids]="s.output.related_evidence_ids"></app-cites></p>
+          <p class="small muted" *ngIf="s.output.data_gaps?.length">Data gaps: {{ s.output.data_gaps.join(' · ') }}</p>
+          <p class="small warn-note" *ngIf="s.note">⚠ {{ s.note }}</p>
+          <details class="tools" *ngIf="s.tool_calls?.length"><summary>Data looked up ({{ s.tool_calls!.length }})</summary>
+            <code *ngFor="let t of s.tool_calls">{{ t.tool }}({{ t.args['line'] || '' }})</code></details>
+        </div>
+        <div *ngSwitchCase="'Planner'">
+          <div class="table-wrap flush"><table class="mini wide">
+            <thead><tr><th>#</th><th>Step</th><th>Type</th><th>Owner</th><th>Priority</th><th class="num">Due (days)</th><th>Evidence</th></tr></thead>
+            <tbody><tr *ngFor="let st of s.output.steps; let i = index">
+              <td>{{ i + 1 }}</td><td><b>{{ st.title }}</b><div class="small muted">{{ st.expected_effect }} · verify: {{ st.verification }}</div></td>
+              <td class="small">{{ st.action_type.replace('_', ' ') }}</td><td class="small">{{ st.owner_role }}</td>
+              <td><app-tag [kind]="st.priority"></app-tag></td><td class="num">{{ st.due_in_days }}</td><td><app-cites [ids]="st.evidence_ids"></app-cites></td></tr></tbody>
+          </table></div>
+        </div>
+        <div *ngSwitchCase="'Coordinator'">
+          <ul class="gaps"><li *ngFor="let a of s.output.actions">{{ a.title }} → <b>{{ a.approval_route.join(' → ') }}</b> <span class="muted">(due {{ a.due_date }})</span></li></ul>
+        </div>
+        <div *ngSwitchCase="'Verifier'">
+          <p><span class="trend" [ngClass]="s.output.result === 'improved' ? 'improved' : s.output.result === 'not_improved' ? 'worse' : 'same'">{{ s.output.result.replace('_', ' ') }}</span></p>
+          <ul class="gaps"><li *ngFor="let d of s.output.details">{{ d }}</li></ul>
+        </div>
+      </ng-container>
+    </li>
+  </ol>
+
+  <h4 class="sub">Actions routed for approval</h4>
+  <app-action-list [actions]="w.actions || []" (changed)="refresh()"></app-action-list>
+
+  <div class="verify-box">
+    <h4 class="sub">Verify results</h4>
+    <p class="small muted">After the work is done and newer data has arrived, the Verifier compares the evidence before and after.</p>
+    <div class="ask">
+      <select *ngIf="w.dataset_id" [(ngModel)]="compareWith" aria-label="Compare with dataset" class="grow">
+        <option value="">Latest other dataset</option>
+        <option *ngFor="let d of otherDatasets" [value]="d.id">{{ d.name }}</option>
+      </select>
+      <button class="btn secondary" (click)="verify()" [disabled]="verifying"><span *ngIf="verifying" class="spinner"></span>Run Verifier</button>
+    </div>
+  </div>
+</section>
+<div class="alert error" *ngIf="error">{{ error }}</div>

@@ -1,0 +1,57 @@
+<app-empty *ngIf="!ds"></app-empty>
+<ng-container *ngIf="ds as d">
+  <section class="panel">
+    <div class="step"><span>⌁</span> Downtime &amp; quality patterns <small>Pareto of downtime reasons · shift, product and weekday comparisons</small>
+      <select class="push" [(ngModel)]="line" (ngModelChange)="draw()" aria-label="Line">
+        <option value="__all">All lines</option>
+        <option *ngFor="let l of d.analysis.overall.lines" [value]="l">{{ l }}</option>
+      </select>
+    </div>
+    <div class="charts">
+      <div class="chart-box">
+        <div class="chart-head"><h3>Downtime Pareto</h3><span class="small muted">red = failure-type reasons</span></div>
+        <app-chart *ngIf="paretoChart" [config]="paretoChart" [height]="280"></app-chart>
+      </div>
+      <div class="chart-box">
+        <div class="chart-head"><h3>Vital few</h3></div>
+        <p class="small muted">Reasons that make up ~80% of {{ line === '__all' ? 'plant' : line }} downtime — fixing these gives the biggest return.</p>
+        <table class="mini">
+          <thead><tr><th>Reason</th><th class="num">Minutes</th><th class="num">Events</th><th class="num">Share</th></tr></thead>
+          <tbody><tr *ngFor="let r of pareto.slice(0, 6)">
+            <td><span class="dot" [class.bad]="r.failure_type"></span>{{ r.reason }}</td><td class="num">{{ r.minutes | number: '1.0-0' }}</td>
+            <td class="num">{{ r.events }}</td><td class="num">{{ r.share_pct }}%</td></tr></tbody>
+        </table>
+        <p class="small muted" *ngIf="line === '__all'">Failure-type downtime: {{ d.analysis.patterns.failure_type_minutes | number: '1.0-0' }} min.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="step"><span>⇄</span> Shift, product &amp; weekday comparison</div>
+    <div class="charts">
+      <div class="table-wrap flush">
+        <table>
+          <thead><tr><th>Line</th><th>Shift</th><th class="num">Achievement</th><th class="num">Defect rate</th><th class="num">Downtime</th></tr></thead>
+          <tbody><tr *ngFor="let r of shiftRows">
+            <td>{{ r.line }}</td><td>{{ r.shift }}</td><td class="num">{{ r.target_achievement_pct | number: '1.1-1' }}%</td>
+            <td class="num">{{ r.defect_rate_pct | number: '1.2-2' }}%</td><td class="num">{{ r.downtime_minutes | number: '1.0-0' }} min</td></tr></tbody>
+        </table>
+        <table class="mt">
+          <thead><tr><th>Product</th><th class="num">Achievement</th><th class="num">Defect rate</th><th class="num">Downtime</th></tr></thead>
+          <tbody><tr *ngFor="let r of d.analysis.patterns.by_product">
+            <td>{{ r.product }}</td><td class="num">{{ r.target_achievement_pct | number: '1.1-1' }}%</td>
+            <td class="num">{{ r.defect_rate_pct | number: '1.2-2' }}%</td><td class="num">{{ r.downtime_minutes | number: '1.0-0' }} min</td></tr></tbody>
+        </table>
+      </div>
+      <div class="chart-box">
+        <div class="chart-head"><h3>Target achievement by weekday</h3></div>
+        <app-chart *ngIf="weekdayChart" [config]="weekdayChart" [height]="240"></app-chart>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="step"><span>A</span> Statistical anomalies <small>robust z-score vs peer lines, vs each line's own trailing 7 days, and between shifts (|z| &gt; 3.5)</small></div>
+    <app-findings-list [findings]="anomalies" emptyText="No anomalies detected."></app-findings-list>
+  </section>
+</ng-container>

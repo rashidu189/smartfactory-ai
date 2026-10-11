@@ -1,0 +1,42 @@
+<section class="panel">
+  <div class="step"><span>✓</span> Actions &amp; approvals
+    <small>role-based approval chain · every decision is stored in the database and the audit log</small></div>
+  <ng-container *ngIf="state.actions$ | async as list">
+    <div class="chips">
+      <button class="chip" [class.on]="tab === 'mine'" (click)="tab = 'mine'">Waiting for me ({{ mine(list) }})</button>
+      <button class="chip" [class.on]="tab === 'open'" (click)="tab = 'open'">Open</button>
+      <button class="chip" [class.on]="tab === 'all'" (click)="tab = 'all'">All ({{ list.length }})</button>
+      <span class="chip static" *ngFor="let s of statuses"><span class="status" [ngClass]="'status-' + s">{{ s.replace('_', ' ') }}</span> {{ count(list, s) }}</span>
+    </div>
+    <p class="small muted">You are <b>{{ users.user.name || 'unnamed' }}</b> · {{ roleLabel[users.user.role] }}. Change this at the top right.
+      Supervisors give level-1 approval; production changes and high-priority maintenance also need the Plant manager.</p>
+    <app-action-list [actions]="filtered(list)"></app-action-list>
+
+    <h4 class="sub">Add an action</h4>
+    <form class="ask" (ngSubmit)="add()">
+      <input type="text" name="t" [(ngModel)]="title" maxlength="200" placeholder="Describe the action…" required class="grow">
+      <input type="text" name="o" [(ngModel)]="owner" maxlength="100" placeholder="Owner role" class="narrow">
+      <select name="p" [(ngModel)]="priority" aria-label="Priority"><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select>
+      <select name="ty" [(ngModel)]="actionType" aria-label="Type">
+        <option value="corrective">Corrective</option><option value="maintenance_work_order">Maintenance work order</option>
+        <option value="quality_containment">Quality containment</option><option value="production_change">Production change</option></select>
+      <button class="btn secondary" type="submit" [disabled]="!title.trim()">Add</button>
+    </form>
+    <div class="export" *ngIf="reportUrl() as u"><a class="btn secondary" [href]="u">Export report (CSV)</a></div>
+  </ng-container>
+</section>
+
+<section class="panel">
+  <details>
+    <summary class="step inline">Audit log ({{ audit.length }} latest)</summary>
+    <div class="table-wrap flush">
+      <table>
+        <thead><tr><th>When</th><th>Who</th><th>Event</th><th>Detail</th></tr></thead>
+        <tbody><tr *ngFor="let e of audit">
+          <td class="nowrap small">{{ e.at | date: 'short' }}</td>
+          <td class="small">{{ e.actor }} <span class="muted">({{ e.actor_role }})</span></td>
+          <td class="small"><code>{{ e.event }}</code></td><td class="small">{{ e.detail }}</td></tr></tbody>
+      </table>
+    </div>
+  </details>
+</section>

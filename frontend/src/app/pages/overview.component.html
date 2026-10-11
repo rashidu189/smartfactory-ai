@@ -1,0 +1,96 @@
+<app-empty *ngIf="!ds"></app-empty>
+<ng-container *ngIf="ds as d">
+  <section class="panel">
+    <div class="step"><span>2</span> Performance dashboard <small>calculated in code from the database</small></div>
+    <div class="kpis">
+      <div class="kpi" [ngClass]="level('target_achievement_pct', d.analysis.overall.target_achievement_pct)">
+        <label>Target achievement</label>
+        <div class="v">{{ d.analysis.overall.target_achievement_pct | number: '1.1-1' }}%</div>
+        <div class="s">{{ d.analysis.overall.actual_output | number }} of {{ d.analysis.overall.target_output | number }} units</div>
+      </div>
+      <div class="kpi" [class.warn]="d.analysis.overall.output_variance < 0">
+        <label>Output variance</label>
+        <div class="v">{{ d.analysis.overall.output_variance > 0 ? '+' : '' }}{{ d.analysis.overall.output_variance | number }}</div>
+        <div class="s">units vs target</div>
+      </div>
+      <div class="kpi" [ngClass]="level('defect_rate_pct', d.analysis.overall.defect_rate_pct)">
+        <label>Defect rate</label>
+        <div class="v">{{ d.analysis.overall.defect_rate_pct | number: '1.2-2' }}%</div>
+        <div class="s">{{ d.analysis.overall.defective_units | number }} of {{ d.analysis.overall.inspected_units | number }} inspected</div>
+      </div>
+      <div class="kpi">
+        <label>Downtime</label>
+        <div class="v">{{ d.analysis.overall.downtime_minutes / 60 | number: '1.1-1' }} h</div>
+        <div class="s">{{ d.analysis.overall.downtime_minutes | number }} min recorded</div>
+      </div>
+    </div>
+
+    <div class="charts">
+      <div class="chart-box">
+        <div class="chart-head"><h3>Line comparison</h3>
+          <select [(ngModel)]="lineMetric" (ngModelChange)="draw()" aria-label="Metric">
+            <option *ngFor="let k of lineMetrics" [value]="k">{{ metricLabels[k] }}</option>
+          </select>
+        </div>
+        <app-chart *ngIf="lineChart" [config]="lineChart"></app-chart>
+      </div>
+      <div class="chart-box">
+        <div class="chart-head"><h3>Daily trend</h3>
+          <select [(ngModel)]="trendLine" (ngModelChange)="draw()" aria-label="Line">
+            <option value="__all">All lines</option>
+            <option *ngFor="let l of d.analysis.overall.lines" [value]="l">{{ l }}</option>
+          </select>
+          <select [(ngModel)]="trendMetric" (ngModelChange)="draw()" aria-label="Metric">
+            <option *ngFor="let k of trendMetrics" [value]="k">{{ metricLabels[k] }}</option>
+          </select>
+        </div>
+        <app-chart *ngIf="trendChart" [config]="trendChart"></app-chart>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Line</th><th class="num">Target</th><th class="num">Actual</th><th class="num">Achievement</th>
+          <th class="num">Variance</th><th class="num">Defect rate</th><th class="num">Downtime</th><th>Top downtime reason</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let s of d.analysis.by_line">
+            <td class="nowrap"><strong>{{ s.line }}</strong></td>
+            <td class="num">{{ s.target_output | number }}</td>
+            <td class="num">{{ s.actual_output | number }}</td>
+            <td class="num" [ngClass]="level('target_achievement_pct', s.target_achievement_pct)">{{ s.target_achievement_pct | number: '1.1-1' }}%</td>
+            <td class="num">{{ s.output_variance > 0 ? '+' : '' }}{{ s.output_variance | number }}</td>
+            <td class="num" [ngClass]="level('defect_rate_pct', s.defect_rate_pct)">{{ s.defect_rate_pct | number: '1.2-2' }}%</td>
+            <td class="num">{{ s.downtime_minutes | number }} min</td>
+            <td>{{ s.top_downtime_reasons[0] ? s.top_downtime_reasons[0].reason : '' || '–' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="step"><span>3</span> Trend risk · next 3 days <small>linear trend over the last 7 days + failure-type stops · a projection, not a guarantee</small></div>
+    <div class="risk-grid">
+      <div class="risk-card" *ngFor="let r of risks" [ngClass]="r.risk_level">
+        <div class="risk-head"><strong>{{ r.line }}</strong><app-tag [kind]="r.risk_level!" [label]="r.risk_level + ' risk'"></app-tag></div>
+        <div class="risk-metrics">
+          <div><label>Achievement</label>{{ r.metrics?.['target_achievement_pct']?.projected | number: '1.0-0' }}%
+            <span class="slope">{{ (r.metrics?.['target_achievement_pct']?.slope_per_day ?? 0) >= 0 ? '▲' : '▼' }}</span></div>
+          <div><label>Defects</label>{{ r.metrics?.['defect_rate_pct']?.projected | number: '1.1-1' }}%</div>
+          <div><label>Downtime</label>{{ r.metrics?.['downtime_minutes']?.projected | number: '1.0-0' }} m</div>
+        </div>
+        <ul class="drivers" *ngIf="r.drivers?.length; else ok"><li *ngFor="let x of r.drivers">{{ x }}</li></ul>
+        <ng-template #ok><p class="muted small">No risk signals.</p></ng-template>
+        <div class="foot" *ngIf="riskFinding(r.line) as pid">Evidence: <app-cites [ids]="[pid]"></app-cites></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="step"><span>4</span> Evidence <small>every AI statement must cite one of these IDs · “Investigate” runs the AI agents</small></div>
+    <div class="chips">
+      <button class="chip" *ngFor="let x of filters" [class.on]="filter === x.id" (click)="filter = x.id">{{ x.label }} ({{ count(x.prefix) }})</button>
+    </div>
+    <app-findings-list [findings]="findings" [highlight]="highlight" emptyText="No evidence in this category."></app-findings-list>
+  </section>
+</ng-container>

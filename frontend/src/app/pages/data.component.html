@@ -1,0 +1,51 @@
+<section class="panel demo-panel">
+  <div class="step"><span>★</span> Full demo <small>all features with SYNTHETIC data</small></div>
+  <p>Loads two production periods (before / after corrective actions), 60 days of sensor data from 12 machines with failure history,
+    trains the failure-prediction model, and loads station records and ERP work orders. Takes about 20–40 seconds.</p>
+  <button class="btn primary" type="button" (click)="demoAll()" [disabled]="busyAll || busy">
+    <span *ngIf="busyAll" class="spinner"></span>{{ busyAll ? 'Loading data and training model…' : 'Load full demo' }}</button>
+</section>
+
+<section class="panel">
+  <div class="step"><span>1</span> Load production data</div>
+  <label class="dropzone" [class.drag]="dragging" (dragover)="$event.preventDefault(); dragging = true"
+         (dragleave)="dragging = false" (drop)="onDrop($event)">
+    <input type="file" accept=".csv,.xlsx,.xls" hidden (change)="onFile($event)">
+    <strong>Drop a CSV or Excel file here</strong>
+    <span>or click to browse</span>
+  </label>
+  <div class="row-actions">
+    <button class="btn secondary" type="button" (click)="sample()" [disabled]="busy">
+      <span *ngIf="busy" class="spinner"></span>Production sample only</button>
+    <a class="link" [href]="sampleUrl()">Download sample / template CSV</a>
+  </div>
+  <details class="schema" *ngIf="state.config$ | async as c">
+    <summary>Required columns</summary>
+    <p><code>{{ c.required_columns.join(', ') }}</code></p>
+    <p>Optional: <code>{{ c.optional_columns.join(', ') }}</code>. One row per line per shift or day.</p>
+  </details>
+  <div class="alert error" *ngIf="error">
+    <strong>{{ error.message }}</strong>
+    <ul *ngIf="error.details.length"><li *ngFor="let d of error.details">{{ d }}</li></ul>
+  </div>
+</section>
+
+<section class="panel" *ngIf="datasets.length">
+  <div class="step"><span>↺</span> Saved datasets <small>stored in the database</small></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Name</th><th>Uploaded</th><th class="num">Records</th><th></th></tr></thead>
+      <tbody>
+        <tr *ngFor="let d of datasets" [class.current]="d.id === state.dataset?.id">
+          <td><span class="tag synthetic" *ngIf="d.synthetic">synthetic</span> {{ d.name }}</td>
+          <td>{{ d.uploaded_at | date: 'medium' }}</td>
+          <td class="num">{{ d.records | number }}</td>
+          <td class="right nowrap">
+            <button class="btn small secondary" (click)="open(d.id)">Open</button>
+            <button class="btn small ghost" (click)="remove(d)" title="Delete">Delete</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>

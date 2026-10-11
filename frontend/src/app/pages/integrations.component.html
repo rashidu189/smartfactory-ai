@@ -1,0 +1,79 @@
+<section class="panel">
+  <div class="step"><span>⇋</span> Integrations · IoT &amp; ERP <small>devices, gateways, Pub/Sub and ERP systems push data through secured endpoints</small></div>
+  <div class="alert error" *ngIf="error">{{ error }}</div>
+  <div class="kpis" *ngIf="data">
+    <div class="kpi" *ngFor="let c of data.channels"><label>{{ c.channel }}</label><div class="v">{{ c.records | number }}</div><div class="s">last {{ c.last_at | date: 'short' }}</div></div>
+    <div class="kpi" *ngIf="!data.channels.length"><label>No data received yet</label><div class="s">Create a key and send a test request below.</div></div>
+  </div>
+  <div class="row-actions">
+    <button class="btn secondary" (click)="simulate()">Run built-in IoT simulator (6 h)</button>
+    <span class="small muted">{{ simMsg }}</span>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="step"><span>⚿</span> API keys <small>only a SHA-256 hash is stored · Supervisor or Plant manager can create and revoke</small></div>
+  <div class="ask">
+    <input type="text" [(ngModel)]="keyName" maxlength="100" placeholder="Key name" class="grow" aria-label="Key name">
+    <label class="check"><input type="checkbox" [(ngModel)]="scopes.iot"> IoT</label>
+    <label class="check"><input type="checkbox" [(ngModel)]="scopes.erp"> ERP</label>
+    <button class="btn primary" (click)="create()">Create key</button>
+  </div>
+  <div class="alert warn" *ngIf="newKey">
+    <b>Copy this key now — it will not be shown again:</b><br><code class="keybox">{{ newKey }}</code>
+    <button class="btn small secondary" (click)="copy(newKey!)">Copy</button>
+  </div>
+  <div class="table-wrap flush" *ngIf="data?.keys?.length">
+    <table>
+      <thead><tr><th>Name</th><th>Prefix</th><th>Scopes</th><th>Created</th><th>Last used</th><th></th></tr></thead>
+      <tbody><tr *ngFor="let k of data!.keys" [class.muted]="k.revoked">
+        <td>{{ k.name }}</td><td><code>{{ k.prefix }}…</code></td><td>{{ k.scopes.join(', ') }}</td>
+        <td class="small">{{ k.created_at | date: 'short' }}</td><td class="small">{{ (k.last_used_at | date: 'short') || '–' }}</td>
+        <td class="right">{{ k.revoked ? 'revoked' : '' }}<button *ngIf="!k.revoked" class="btn small ghost" (click)="revoke(k.id)">Revoke</button></td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="step"><span>{{ '{' }}{{ '}' }}</span> Endpoints</div>
+  <div class="endpoint">
+    <h4>IoT telemetry <code>POST /api/integrations/iot/telemetry</code></h4>
+    <p class="small muted">One reading or a list (max 5 000). Unknown machines are registered automatically. Timestamps default to now (UTC).</p>
+    <pre>curl -X POST {{ origin }}/api/integrations/iot/telemetry \
+  -H "X-API-Key: {{ key }}" -H "Content-Type: application/json" \
+  -d '{{ '{' }}"machine_id":"L03-PRS-01","ts":"2026-10-12T08:00:00Z","temperature_c":71.2,"vibration_mm_s":4.4,"current_a":16.1{{ '}' }}'</pre>
+  </div>
+  <div class="endpoint">
+    <h4>Machine events <code>POST /api/integrations/iot/events</code></h4>
+    <pre>-d '{{ '{' }}"machine_id":"L03-PRS-01","event_type":"failure","description":"Hydraulic seal"{{ '}' }}'</pre>
+  </div>
+  <div class="endpoint">
+    <h4>Google Cloud Pub/Sub push <code>POST /api/integrations/pubsub/push?token=…</code>
+      <span class="tag" [ngClass]="data?.pubsub_configured ? 'ok' : 'low'">{{ data?.pubsub_configured ? 'configured' : 'not configured' }}</span></h4>
+    <p class="small muted">Create a push subscription pointing here. <code>message.data</code> = base64 JSON telemetry (or a list); attribute <code>type=event</code> for events.
+      Set <code>PUBSUB_VERIFICATION_TOKEN</code> on the service.</p>
+    <pre>gcloud pubsub subscriptions create sf-telemetry-push --topic=factory-telemetry \
+  --push-endpoint="{{ origin }}/api/integrations/pubsub/push?token=$PUBSUB_VERIFICATION_TOKEN"</pre>
+  </div>
+  <div class="endpoint">
+    <h4>ERP work orders <code>POST /api/integrations/erp/work-orders</code> · production <code>POST /api/integrations/erp/production</code></h4>
+    <pre>curl -X POST {{ origin }}/api/integrations/erp/work-orders -H "X-API-Key: {{ key }}" -H "Content-Type: application/json" \
+  -d '[{{ '{' }}"order_id":"WO-1001","line":"Line 02","quantity":1200,"due_date":"2026-10-15","status":"released"{{ '}' }}]'</pre>
+  </div>
+  <p class="small muted">A ready-made device simulator is included: <code>python backend/scripts/iot_simulator.py --url {{ origin }} --key &lt;KEY&gt;</code>. Full API docs: <a class="link" href="/docs" target="_blank" rel="noopener">/docs</a>.</p>
+</section>
+
+<section class="panel" *ngIf="data?.log?.length">
+  <details open>
+    <summary class="step inline">Ingestion log</summary>
+    <div class="table-wrap flush">
+      <table>
+        <thead><tr><th>When</th><th>Channel</th><th>Status</th><th class="num">Records</th><th>Message</th><th>Key</th></tr></thead>
+        <tbody><tr *ngFor="let l of data!.log">
+          <td class="small nowrap">{{ l.ts | date: 'short' }}</td><td><code>{{ l.channel }}</code></td>
+          <td><span class="status" [ngClass]="l.status === 'ok' ? 'status-completed' : 'status-rejected'">{{ l.status }}</span></td>
+          <td class="num">{{ l.records }}</td><td class="small">{{ l.message }}</td><td class="small"><code>{{ l.key || '–' }}</code></td></tr></tbody>
+      </table>
+    </div>
+  </details>
+</section>

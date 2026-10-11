@@ -1,0 +1,141 @@
+date,line,shift,product,target_output,actual_output,inspected_units,defective_units,downtime_minutes,downtime_reason
+2026-09-28,Line 01,A,Bottle Cap A,1200,1129,1129,18,10,Minor stops
+2026-09-28,Line 01,B,Bottle Cap A,1200,1121,1121,23,10,Material shortage
+2026-09-28,Line 02,A,Bottle Cap B,1100,1017,1017,19,25,Planned maintenance
+2026-09-28,Line 02,B,Bottle Cap B,1100,1057,1057,18,15,Changeover
+2026-09-28,Line 03,A,Pump Housing,900,826,826,8,10,Planned maintenance
+2026-09-28,Line 03,B,Pump Housing,900,850,850,11,25,Minor stops
+2026-09-28,Line 04,A,Valve Seal,1000,933,933,21,20,Planned maintenance
+2026-09-28,Line 04,B,Valve Seal,1000,939,939,34,10,Minor stops
+2026-09-28,Line 05,A,Spray Nozzle,950,879,879,30,15,Minor stops
+2026-09-28,Line 05,B,Spray Nozzle,950,878,878,32,25,Changeover
+2026-09-29,Line 01,A,Bottle Cap A,1200,1112,1112,18,10,Planned maintenance
+2026-09-29,Line 01,B,Bottle Cap A,1200,1109,1109,16,30,Planned maintenance
+2026-09-29,Line 02,A,Bottle Cap B,1100,1003,1003,16,25,Planned maintenance
+2026-09-29,Line 02,B,Bottle Cap B,1100,998,998,19,30,Material shortage
+2026-09-29,Line 03,A,Pump Housing,900,833,833,16,35,Changeover
+2026-09-29,Line 03,B,Pump Housing,900,825,825,17,15,Planned maintenance
+2026-09-29,Line 04,A,Valve Seal,1000,929,929,17,10,Planned maintenance
+2026-09-29,Line 04,B,Valve Seal,1000,916,916,33,30,Minor stops
+2026-09-29,Line 05,A,Spray Nozzle,950,881,881,29,35,Planned maintenance
+2026-09-29,Line 05,B,Spray Nozzle,950,878,878,33,20,Changeover
+2026-09-30,Line 01,A,Bottle Cap A,1200,1137,1137,16,25,Planned maintenance
+2026-09-30,Line 01,B,Bottle Cap A,1200,1088,1088,17,35,Planned maintenance
+2026-09-30,Line 02,A,Bottle Cap B,1100,996,996,17,25,Planned maintenance
+2026-09-30,Line 02,B,Bottle Cap B,1100,1007,1007,16,20,Minor stops
+2026-09-30,Line 03,A,Pump Housing,900,812,812,13,25,Minor stops
+2026-09-30,Line 03,B,Pump Housing,900,829,829,18,25,Planned maintenance
+2026-09-30,Line 04,A,Valve Seal,1000,915,915,10,25,Minor stops
+2026-09-30,Line 04,B,Valve Seal,1000,958,958,31,25,Material shortage
+2026-09-30,Line 05,A,Spray Nozzle,950,896,896,28,30,Changeover
+2026-09-30,Line 05,B,Spray Nozzle,950,887,887,28,10,Minor stops
+2026-10-01,Line 01,A,Bottle Cap A,1200,1090,1090,20,20,Planned maintenance
+2026-10-01,Line 01,B,Bottle Cap A,1200,1137,1137,18,30,Material shortage
+2026-10-01,Line 02,A,Bottle Cap B,1100,1008,1008,11,30,Minor stops
+2026-10-01,Line 02,B,Bottle Cap B,1100,1039,1039,17,15,Minor stops
+2026-10-01,Line 03,A,Pump Housing,900,819,819,12,15,Material shortage
+2026-10-01,Line 03,B,Pump Housing,900,845,845,9,25,Changeover
+2026-10-01,Line 04,A,Valve Seal,1000,935,935,10,20,Changeover
+2026-10-01,Line 04,B,Valve Seal,1000,898,898,35,35,Minor stops
+2026-10-01,Line 05,A,Spray Nozzle,950,882,882,31,25,Material shortage
+2026-10-01,Line 05,B,Spray Nozzle,950,877,877,27,20,Planned maintenance
+2026-10-02,Line 01,A,Bottle Cap A,1200,1086,1086,13,25,Changeover
+2026-10-02,Line 01,B,Bottle Cap A,1200,1112,1112,17,10,Changeover
+2026-10-02,Line 02,A,Bottle Cap B,1100,1007,1007,19,15,Planned maintenance
+2026-10-02,Line 02,B,Bottle Cap B,1100,1030,1030,20,15,Material shortage
+2026-10-02,Line 03,A,Pump Housing,900,861,861,15,15,Material shortage
+2026-10-02,Line 03,B,Pump Housing,900,821,821,13,20,Planned maintenance
+2026-10-02,Line 04,A,Valve Seal,1000,949,949,12,25,Minor stops
+2026-10-02,Line 04,B,Valve Seal,1000,911,911,33,25,Planned maintenance
+2026-10-02,Line 05,A,Spray Nozzle,950,894,894,32,15,Minor stops
+2026-10-02,Line 05,B,Spray Nozzle,950,860,860,28,30,Minor stops
+2026-10-03,Line 01,A,Bottle Cap A,1200,1137,1137,20,10,Planned maintenance
+2026-10-03,Line 01,B,Bottle Cap A,1200,1117,1117,24,35,Material shortage
+2026-10-03,Line 02,A,Bottle Cap B,1100,1027,1027,17,15,Minor stops
+2026-10-03,Line 02,B,Bottle Cap B,1100,1004,1004,11,30,Material shortage
+2026-10-03,Line 03,A,Pump Housing,900,830,830,14,30,Material shortage
+2026-10-03,Line 03,B,Pump Housing,900,842,842,9,35,Material shortage
+2026-10-03,Line 04,A,Valve Seal,1000,956,956,11,25,Material shortage
+2026-10-03,Line 04,B,Valve Seal,1000,957,957,35,20,Material shortage
+2026-10-03,Line 05,A,Spray Nozzle,950,890,890,29,30,Changeover
+2026-10-03,Line 05,B,Spray Nozzle,950,872,872,34,10,Changeover
+2026-10-04,Line 01,A,Bottle Cap A,1200,1134,1134,12,25,Changeover
+2026-10-04,Line 01,B,Bottle Cap A,1200,1116,1116,12,20,Changeover
+2026-10-04,Line 02,A,Bottle Cap B,1100,1020,1020,20,20,Minor stops
+2026-10-04,Line 02,B,Bottle Cap B,1100,1026,1026,22,35,Changeover
+2026-10-04,Line 03,A,Pump Housing,900,834,834,13,15,Planned maintenance
+2026-10-04,Line 03,B,Pump Housing,900,838,838,17,10,Minor stops
+2026-10-04,Line 04,A,Valve Seal,1000,915,915,12,20,Planned maintenance
+2026-10-04,Line 04,B,Valve Seal,1000,955,955,35,10,Planned maintenance
+2026-10-04,Line 05,A,Spray Nozzle,950,880,880,33,35,Changeover
+2026-10-04,Line 05,B,Spray Nozzle,950,920,920,39,10,Minor stops
+2026-10-05,Line 01,A,Bottle Cap A,1200,1152,1152,13,15,Changeover
+2026-10-05,Line 01,B,Bottle Cap A,1200,1115,1115,12,20,Minor stops
+2026-10-05,Line 02,A,Bottle Cap B,1100,1044,1044,15,20,Planned maintenance
+2026-10-05,Line 02,B,Bottle Cap B,1100,1043,1043,20,25,Material shortage
+2026-10-05,Line 03,A,Pump Housing,900,591,591,27,85,Mechanical failure - press
+2026-10-05,Line 03,B,Pump Housing,900,576,576,27,130,Mechanical failure - press
+2026-10-05,Line 04,A,Valve Seal,1000,940,940,13,10,Minor stops
+2026-10-05,Line 04,B,Valve Seal,1000,902,902,36,35,Minor stops
+2026-10-05,Line 05,A,Spray Nozzle,950,906,906,33,15,Planned maintenance
+2026-10-05,Line 05,B,Spray Nozzle,950,899,899,35,15,Planned maintenance
+2026-10-06,Line 01,A,Bottle Cap A,1200,1132,1132,16,30,Minor stops
+2026-10-06,Line 01,B,Bottle Cap A,1200,1117,1117,20,20,Planned maintenance
+2026-10-06,Line 02,A,Bottle Cap B,1100,1014,1014,12,25,Minor stops
+2026-10-06,Line 02,B,Bottle Cap B,1100,1002,1002,21,15,Planned maintenance
+2026-10-06,Line 03,A,Pump Housing,900,571,571,29,70,Mechanical failure - press
+2026-10-06,Line 03,B,Pump Housing,900,540,540,30,70,Mechanical failure - press
+2026-10-06,Line 04,A,Valve Seal,1000,895,895,15,35,Minor stops
+2026-10-06,Line 04,B,Valve Seal,1000,953,953,32,25,Material shortage
+2026-10-06,Line 05,A,Spray Nozzle,950,894,894,35,25,Minor stops
+2026-10-06,Line 05,B,Spray Nozzle,950,887,887,32,35,Material shortage
+2026-10-07,Line 01,A,Bottle Cap A,1200,1119,1119,24,44,Bearing overheating
+2026-10-07,Line 01,B,Bottle Cap A,1200,1092,1092,22,39,Changeover
+2026-10-07,Line 02,A,Bottle Cap B,1100,1058,1058,20,20,Material shortage
+2026-10-07,Line 02,B,Bottle Cap B,1100,1002,1002,12,20,Material shortage
+2026-10-07,Line 03,A,Pump Housing,900,597,597,29,95,Mechanical failure - press
+2026-10-07,Line 03,B,Pump Housing,900,522,522,25,110,Mechanical failure - press
+2026-10-07,Line 04,A,Valve Seal,1000,953,953,13,10,Planned maintenance
+2026-10-07,Line 04,B,Valve Seal,1000,942,942,37,10,Minor stops
+2026-10-07,Line 05,A,Spray Nozzle,950,893,893,33,15,Minor stops
+2026-10-07,Line 05,B,Spray Nozzle,950,918,918,33,10,Changeover
+2026-10-08,Line 01,A,Bottle Cap A,1200,1108,1108,21,53,Bearing overheating
+2026-10-08,Line 01,B,Bottle Cap A,1200,1057,1057,15,58,Minor stops
+2026-10-08,Line 02,A,Bottle Cap B,1100,1042,1042,14,25,Planned maintenance
+2026-10-08,Line 02,B,Bottle Cap B,1100,996,996,20,25,Material shortage
+2026-10-08,Line 03,A,Pump Housing,900,544,544,26,85,Mechanical failure - press
+2026-10-08,Line 03,B,Pump Housing,900,541,541,28,70,Mechanical failure - press
+2026-10-08,Line 04,A,Valve Seal,1000,922,922,11,25,Minor stops
+2026-10-08,Line 04,B,Valve Seal,1000,934,934,31,15,Minor stops
+2026-10-08,Line 05,A,Spray Nozzle,950,893,893,33,20,Planned maintenance
+2026-10-08,Line 05,B,Spray Nozzle,950,877,877,36,20,Planned maintenance
+2026-10-09,Line 01,A,Bottle Cap A,1200,1070,1070,16,62,Bearing overheating
+2026-10-09,Line 01,B,Bottle Cap A,1200,1072,1072,11,67,Bearing overheating
+2026-10-09,Line 02,A,Bottle Cap B,1100,1024,1024,17,15,Minor stops
+2026-10-09,Line 02,B,Bottle Cap B,1100,1053,1053,15,25,Planned maintenance
+2026-10-09,Line 03,A,Pump Housing,900,592,592,27,95,Mechanical failure - press
+2026-10-09,Line 03,B,Pump Housing,900,541,541,32,130,Mechanical failure - press
+2026-10-09,Line 04,A,Valve Seal,1000,913,913,11,10,Changeover
+2026-10-09,Line 04,B,Valve Seal,1000,949,949,34,25,Material shortage
+2026-10-09,Line 05,A,Spray Nozzle,950,869,869,32,30,Planned maintenance
+2026-10-09,Line 05,B,Spray Nozzle,950,899,899,29,10,Changeover
+2026-10-10,Line 01,A,Bottle Cap A,1200,1030,1030,23,86,Bearing overheating
+2026-10-10,Line 01,B,Bottle Cap A,1200,1075,1075,15,81,Bearing overheating
+2026-10-10,Line 02,A,Bottle Cap B,1100,1005,1005,21,20,Planned maintenance
+2026-10-10,Line 02,B,Bottle Cap B,1100,1037,1037,12,10,Planned maintenance
+2026-10-10,Line 03,A,Pump Housing,900,529,529,27,95,Mechanical failure - press
+2026-10-10,Line 03,B,Pump Housing,900,533,533,33,110,Mechanical failure - press
+2026-10-10,Line 04,A,Valve Seal,1000,915,915,20,35,Minor stops
+2026-10-10,Line 04,B,Valve Seal,1000,916,916,34,30,Minor stops
+2026-10-10,Line 05,A,Spray Nozzle,950,868,868,36,10,Material shortage
+2026-10-10,Line 05,B,Spray Nozzle,950,856,856,36,30,Planned maintenance
+2026-10-11,Line 01,A,Bottle Cap A,1200,1049,1049,14,100,Bearing overheating
+2026-10-11,Line 01,B,Bottle Cap A,1200,1060,1060,21,100,Bearing overheating
+2026-10-11,Line 02,A,Bottle Cap B,1100,1001,1001,17,25,Material shortage
+2026-10-11,Line 02,B,Bottle Cap B,1100,1034,1034,23,20,Minor stops
+2026-10-11,Line 03,A,Pump Housing,900,605,605,36,85,Mechanical failure - press
+2026-10-11,Line 03,B,Pump Housing,900,519,519,32,95,Mechanical failure - press
+2026-10-11,Line 04,A,Valve Seal,1000,935,935,12,15,Material shortage
+2026-10-11,Line 04,B,Valve Seal,1000,952,952,31,20,Material shortage
+2026-10-11,Line 05,A,Spray Nozzle,950,884,884,36,15,Material shortage
+2026-10-11,Line 05,B,Spray Nozzle,950,902,902,33,10,Minor stops

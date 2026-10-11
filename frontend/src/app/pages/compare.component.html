@@ -1,0 +1,39 @@
+<section class="panel">
+  <div class="step"><span>⇆</span> Compare periods <small>did the actions work? before vs after, per line</small></div>
+  <p class="empty" *ngIf="datasets.length < 2">Load at least two production datasets (e.g. the full demo on the Data page) to compare periods.</p>
+  <div class="ask" *ngIf="datasets.length >= 2">
+    <label class="field">Before <select [(ngModel)]="base"><option *ngFor="let d of datasets" [value]="d.id">{{ label(d) }}</option></select></label>
+    <label class="field">After <select [(ngModel)]="current"><option *ngFor="let d of datasets" [value]="d.id">{{ label(d) }}</option></select></label>
+    <button class="btn primary" (click)="run()" [disabled]="busy"><span *ngIf="busy" class="spinner"></span>Compare</button>
+  </div>
+  <div class="alert error" *ngIf="error">{{ error }}</div>
+
+  <ng-container *ngIf="result as r">
+    <div class="kpis mt">
+      <div class="kpi" *ngFor="let k of [['target_achievement_pct','Target achievement','%',1],['defect_rate_pct','Defect rate','%',-1],['downtime_minutes','Downtime','min',-1]]"
+           [class.warn]="(r.plant[k[0]].delta * $any(k[3])) < 0">
+        <label>{{ k[1] }}</label>
+        <div class="v">{{ r.plant[k[0]].current | number: '1.0-2' }}<small>{{ k[2] }}</small></div>
+        <div class="s">was {{ r.plant[k[0]].base | number: '1.0-2' }}{{ k[2] }} · Δ {{ r.plant[k[0]].delta > 0 ? '+' : '' }}{{ r.plant[k[0]].delta | number: '1.0-2' }}</div>
+      </div>
+    </div>
+    <div class="charts">
+      <div class="chart-box"><div class="chart-head"><h3>Target achievement by line</h3></div>
+        <app-chart *ngIf="chart" [config]="chart" [height]="260"></app-chart></div>
+      <div class="table-wrap flush">
+        <table>
+          <thead><tr><th>Line</th><th class="num">Achievement</th><th class="num">Defect rate</th><th class="num">Downtime / day</th></tr></thead>
+          <tbody><tr *ngFor="let l of r.lines">
+            <td class="nowrap"><strong>{{ l.line }}</strong></td>
+            <td class="num"><ng-container *ngIf="l.target_achievement_pct as m">{{ m.base | number: '1.1-1' }} → {{ m.current | number: '1.1-1' }}% <span class="trend" [ngClass]="m.trend">{{ m.trend }}</span></ng-container></td>
+            <td class="num"><ng-container *ngIf="l.defect_rate_pct as m">{{ m.base | number: '1.2-2' }} → {{ m.current | number: '1.2-2' }}% <span class="trend" [ngClass]="m.trend">{{ m.trend }}</span></ng-container></td>
+            <td class="num"><ng-container *ngIf="l.downtime_per_day as m">{{ m.base | number: '1.0-0' }} → {{ m.current | number: '1.0-0' }} <span class="trend" [ngClass]="m.trend">{{ m.trend }}</span></ng-container></td>
+          </tr></tbody>
+        </table>
+      </div>
+    </div>
+    <h4 class="sub">Actions approved or done in the “before” period</h4>
+    <app-action-list [actions]="r.actions" [compact]="true"></app-action-list>
+    <p class="small muted">A before/after difference shows correlation in time, not proof that an action caused it.</p>
+  </ng-container>
+</section>

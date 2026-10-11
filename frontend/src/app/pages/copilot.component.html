@@ -1,0 +1,46 @@
+<section class="panel copilot">
+  <div class="step"><span>💬</span> Operations copilot
+    <small>Gemini answers by calling tools over production, machine-health, bottleneck and ERP data · cites evidence · shows what it looked up</small>
+    <button class="btn small ghost push" *ngIf="chat.length" (click)="clear()">New conversation</button>
+  </div>
+
+  <div class="alert info" *ngIf="!(state.config$ | async)?.gemini_configured">
+    The copilot needs Gemini. Configure Vertex AI (or a Gemini API key) on the server to enable it.
+  </div>
+
+  <div class="chat-log" #log>
+    <div class="suggest" *ngIf="!chat.length">
+      <p class="muted">Try asking:</p>
+      <button class="chip" *ngFor="let s of suggestions" (click)="send(s)">{{ s }}</button>
+    </div>
+    <div *ngFor="let c of chat" class="msg" [ngClass]="c.role">
+      <ng-container *ngIf="c.role === 'user'">{{ c.text }}</ng-container>
+      <ng-container *ngIf="c.role === 'model'">
+        <div class="alert error" *ngIf="c.error">{{ c.error }}</div>
+        <ng-container *ngIf="!c.error">
+          <div *ngFor="let l of lines(c)" [class.bullet]="l.bullet" class="ln">
+            <ng-container *ngFor="let s of l.segs">
+              <span *ngIf="s.t === 'text'">{{ s.v }}</span>
+              <strong *ngIf="s.t === 'bold'">{{ s.v }}</strong>
+              <span *ngIf="s.t === 'cite'" class="nowrap"><button type="button" class="cite" [ngClass]="'k-' + s.v[0]"
+                      [class.invalid]="!isValid(c, s.v)" [title]="isValid(c, s.v) ? 'Show evidence' : 'Not a valid finding ID'"
+                      (click)="isValid(c, s.v) && openFinding(s.v)">{{ s.v }}</button>{{ s.after }}</span>
+            </ng-container>
+          </div>
+          <details class="tools" *ngIf="c.reply?.tool_calls?.length">
+            <summary>Data looked up ({{ c.reply!.tool_calls.length }}) · {{ c.reply!.model }}</summary>
+            <code *ngFor="let t of c.reply!.tool_calls">{{ t.tool }}({{ (t.args['line'] || '') }})</code>
+          </details>
+          <div class="warn-note" *ngIf="c.reply?.invalid_ids?.length">
+            ⚠ Mentioned ID(s) not in the data: {{ c.reply!.invalid_ids.join(', ') }}</div>
+        </ng-container>
+      </ng-container>
+    </div>
+    <div class="msg model" *ngIf="busy"><span class="spinner"></span>Looking at the data…</div>
+  </div>
+
+  <form class="ask" (ngSubmit)="send()">
+    <input type="text" name="m" [(ngModel)]="message" maxlength="1000" placeholder="Ask about lines, trends, risks, actions…" autocomplete="off">
+    <button class="btn primary" type="submit" [disabled]="busy || !message.trim()">Send</button>
+  </form>
+</section>

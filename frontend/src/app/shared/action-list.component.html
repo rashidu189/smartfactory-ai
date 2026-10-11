@@ -1,0 +1,44 @@
+<div class="action-list">
+  <div class="action-card" *ngFor="let a of actions; trackBy: trackById" [ngClass]="'st-' + a.status">
+    <div class="ac-head">
+      <div class="ac-title">
+        <strong>{{ a.title }}</strong>
+        <div class="meta">
+          <app-tag [kind]="a.priority" [label]="a.priority + ' priority'"></app-tag>
+          <app-tag kind="low" [label]="typeLabel[a.action_type] || a.action_type"></app-tag>
+          <span class="small muted">{{ a.owner_role || 'No owner' }}<span *ngIf="a.due_date"> · due {{ a.due_date | date: 'mediumDate' }}</span> · {{ a.source }}</span>
+        </div>
+      </div>
+      <span class="status-pill" [ngClass]="'status-' + a.status">{{ a.status.replace('_', ' ') }}</span>
+    </div>
+    <div class="ac-body">
+      <div class="small"><span class="muted">Evidence:</span> <app-cites [ids]="a.finding_ids"></app-cites>
+        <a *ngIf="a.workflow_id && !compact" class="link small" [routerLink]="['/agents', a.workflow_id]">· agent workflow</a></div>
+      <ol class="chain">
+        <li *ngFor="let c of chain(a)" [ngClass]="c.done ? c.done.decision : (a.status === 'pending' && c.level === a.approved_levels + 1 ? 'waiting' : 'todo')">
+          <span class="lvl">L{{ c.level }} {{ c.role }}</span>
+          <span *ngIf="c.done">{{ c.done.decision === 'approved' ? '✓' : '✗' }} {{ c.done.by_name }} · {{ c.done.at | date: 'short' }}
+            <em *ngIf="c.done.comment">“{{ c.done.comment }}”</em></span>
+          <span *ngIf="!c.done && a.status === 'pending' && c.level === a.approved_levels + 1" class="muted">waiting</span>
+        </li>
+      </ol>
+    </div>
+    <div class="ac-actions">
+      <ng-container *ngIf="a.status === 'pending'">
+        <ng-container *ngIf="canDecide(a); else cannot">
+          <input type="text" [(ngModel)]="comments[a.id]" placeholder="Comment (optional)" maxlength="1000" [attr.aria-label]="'Comment on ' + a.title">
+          <button class="btn small primary" (click)="decide(a, 'approved')" [disabled]="busy[a.id]">Approve L{{ a.approved_levels + 1 }}</button>
+          <button class="btn small secondary" (click)="decide(a, 'rejected')" [disabled]="busy[a.id]">Reject</button>
+        </ng-container>
+        <ng-template #cannot><span class="small muted">Needs {{ a.approved_levels === 0 ? 'a Supervisor' : 'the Plant manager' }} to approve
+          (you are {{ roleLabel[users.user.role] }}).</span></ng-template>
+      </ng-container>
+      <button *ngIf="a.status === 'approved'" class="btn small secondary" (click)="progress(a, 'in_progress')" [disabled]="busy[a.id]">Start</button>
+      <button *ngIf="a.status === 'approved' || a.status === 'in_progress'" class="btn small primary" (click)="progress(a, 'completed')" [disabled]="busy[a.id]">Mark completed</button>
+      <input *ngIf="!compact && a.status !== 'pending'" type="text" class="grow" [ngModel]="a.note" (change)="note(a, $any($event.target).value)"
+             placeholder="Execution note" maxlength="1000" [attr.aria-label]="'Note for ' + a.title">
+    </div>
+    <div class="alert error" *ngIf="errors[a.id]">{{ errors[a.id] }}</div>
+  </div>
+  <p class="empty" *ngIf="!actions.length">No actions.</p>
+</div>

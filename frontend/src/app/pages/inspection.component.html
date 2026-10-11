@@ -1,0 +1,59 @@
+<app-empty *ngIf="!(state.dataset$ | async)"></app-empty>
+<ng-container *ngIf="state.dataset$ | async as d">
+  <section class="panel">
+    <div class="step"><span>📷</span> Visual quality inspection
+      <small>Gemini inspects a part photo · defects become V-findings linked to the line</small></div>
+    <div class="alert info" *ngIf="!(state.config$ | async)?.gemini_configured">
+      Visual inspection needs Gemini. Configure Vertex AI (or a Gemini API key) on the server to enable it.
+    </div>
+    <div class="inspect-grid">
+      <form class="inspect-form" (ngSubmit)="submit()">
+        <label>Production line
+          <select name="line" [(ngModel)]="line" required>
+            <option *ngFor="let l of d.analysis.overall.lines" [value]="l">{{ l }}</option>
+          </select></label>
+        <label>Part / product <input type="text" name="part" [(ngModel)]="part" maxlength="200" placeholder="e.g. Pump housing"></label>
+        <label>Notes for the inspector <input type="text" name="notes" [(ngModel)]="notes" maxlength="500" placeholder="Optional context"></label>
+        <label class="photo">
+          <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onFile($event)" hidden>
+          <img *ngIf="preview" [src]="preview" alt="Selected part photo">
+          <span *ngIf="!preview"><strong>Choose a photo</strong><br>JPEG, PNG or WebP · max 8 MB</span>
+        </label>
+        <button class="btn primary" type="submit" [disabled]="busy || !file">
+          <span *ngIf="busy" class="spinner"></span>{{ busy ? 'Inspecting…' : 'Inspect photo' }}</button>
+        <div class="alert error" *ngIf="error">{{ error }}</div>
+      </form>
+
+      <div class="inspect-result">
+        <p class="empty" *ngIf="!latest">The result appears here. Results are stored with the dataset.</p>
+        <div *ngIf="latest as r" class="result-card" [ngClass]="sevClass(r.severity)">
+          <div class="meta">
+            <app-tag [kind]="r.defect_detected ? sevClass(r.severity) : 'ok'" [label]="r.defect_detected ? r.severity + ' defect' : 'no defect'"></app-tag>
+            <app-tag kind="low" [label]="r.defect_type.replace('_', ' ')"></app-tag>
+            <app-tag kind="low" [label]="(r.confidence | percent) + ' confidence'"></app-tag>
+            <app-cites *ngIf="r.finding_id" [ids]="[r.finding_id]"></app-cites>
+          </div>
+          <p><strong>{{ r.description }}</strong></p>
+          <p class="r" *ngIf="r.visible_evidence">Where: {{ r.visible_evidence }}</p>
+          <p class="r">Next step: {{ r.recommended_action }}</p>
+          <div class="alert warn" *ngIf="!r.image_quality_ok">Image quality is limited; treat this result with caution and re-take the photo.</div>
+          <div class="foot"><span class="source">{{ r.model }} · {{ r.created_at | date: 'short' }}</span>
+            <button *ngIf="r.defect_detected" class="btn small secondary" (click)="addAction(r)" [disabled]="addedAction">
+              {{ addedAction ? 'Added ✓' : 'Add to actions' }}</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" *ngIf="history.length">
+    <div class="step"><span>☰</span> Inspection history</div>
+    <div class="gallery">
+      <div class="thumb" *ngFor="let h of history">
+        <img [src]="h.image_url" [alt]="'Inspection ' + h.seq" loading="lazy">
+        <div class="meta"><app-tag [kind]="h.defect_detected ? sevClass(h.severity) : 'ok'" [label]="h.defect_detected ? h.severity : 'ok'"></app-tag>
+          <span class="small">{{ h.line }}</span><app-cites *ngIf="h.finding_id" [ids]="[h.finding_id]"></app-cites></div>
+        <div class="small">{{ h.defect_type.replace('_', ' ') }} · {{ h.created_at | date: 'short' }}</div>
+      </div>
+    </div>
+  </section>
+</ng-container>

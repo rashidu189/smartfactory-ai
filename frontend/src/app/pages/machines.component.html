@@ -1,0 +1,105 @@
+<section class="panel">
+  <div class="step"><span>⚙</span> Machine health · failure prediction <small>ML model trained on historical sensor data and failure events</small>
+    <span class="tag synthetic push" *ngIf="data?.synthetic">Synthetic sensor data</span></div>
+
+  <div class="alert info" *ngIf="data && !data.machines.length">
+    No sensor data yet. Load the full demo on the <a routerLink="/data">Data</a> page, upload sensor history below, or stream telemetry through
+    <a routerLink="/integrations">Integrations</a>.</div>
+  <div class="alert info" *ngIf="message">{{ message }}</div>
+  <div class="alert error" *ngIf="error">{{ error }}</div>
+
+  <div class="model-card" *ngIf="data?.model as m">
+    <div>
+      <h3>Model #{{ m.id }} · {{ m.algorithm }}</h3>
+      <p class="small muted">Predicts “failure within {{ m.horizon_hours }} h”. Trained {{ m.created_at | date: 'medium' }} ·
+        time-based split: train {{ m.metrics.train_period[0] | slice: 0:10 }} → {{ m.metrics.train_period[1] | slice: 0:10 }},
+        test {{ m.metrics.test_period[0] | slice: 0:10 }} → {{ m.metrics.test_period[1] | slice: 0:10 }}. Alert threshold {{ m.threshold | number: '1.2-2' }}.</p>
+    </div>
+    <div class="metrics">
+      <div><label>Failures caught (test)</label><b>{{ m.metrics.failures_caught }}/{{ m.metrics.failures_in_test }}</b></div>
+      <div><label>Median warning</label><b>{{ m.metrics.median_lead_time_h ?? '–' }} h</b></div>
+      <div><label>False alarms</label><b>{{ m.metrics.false_alarms_per_machine_week ?? '–' }}</b><span>/machine-week</span></div>
+      <div><label>ROC AUC</label><b>{{ m.metrics.roc_auc }}</b></div>
+      <div><label>PR AUC</label><b>{{ m.metrics.pr_auc }}</b><span>base {{ m.metrics.base_rate }}</span></div>
+      <div><label>Precision / recall</label><b>{{ m.metrics.precision }} / {{ m.metrics.recall }}</b></div>
+    </div>
+  </div>
+
+  <div class="row-actions">
+    <button class="btn secondary" (click)="train()" [disabled]="!!busy || !data?.machines?.length"><span *ngIf="busy === 'train'" class="spinner"></span>Retrain model</button>
+    <ng-container *ngIf="data?.synthetic">
+      <button class="btn secondary" (click)="simulate(6)" [disabled]="!!busy"><span *ngIf="busy === 'sim'" class="spinner"></span>Simulate 6 h telemetry</button>
+      <button class="btn secondary" (click)="simulate(24)" [disabled]="!!busy">Simulate 24 h</button>
+    </ng-container>
+    <label class="btn ghost">Upload sensor CSV<input type="file" hidden accept=".csv,.xlsx" (change)="upload('machines/readings', $event)"></label>
+    <label class="btn ghost">Upload failure/maintenance events<input type="file" hidden accept=".csv,.xlsx" (change)="upload('machines/events', $event)"></label>
+  </div>
+  <p class="small muted" *ngIf="data?.readings?.count">{{ data!.readings.count | number }} readings from {{ data!.readings.from | date: 'mediumDate' }} to
+    {{ data!.readings.to | date: 'medium' }} · {{ data!.events['failure'] || 0 }} failures, {{ data!.events['maintenance'] || 0 }} maintenance events.</p>
+</section>
+
+<section class="panel" *ngIf="data?.machines?.length">
+  <div class="step"><span>☰</span> Fleet risk <small>probability of failure in the next {{ data!.model?.horizon_hours || 48 }} h · click a machine for details</small></div>
+  <div class="table-wrap flush">
+    <table>
+      <thead><tr><th>Machine</th><th>Line</th><th>Type</th><th>Failure risk</th><th>Main signals</th></tr></thead>
+      <tbody>
+        <tr *ngFor="let m of data!.machines" (click)="select(m.machine_id)" class="clickable" [class.current]="selected?.machine_id === m.machine_id">
+          <td class="nowrap"><strong>{{ m.machine_code }}</strong></td><td class="nowrap">{{ m.line }}</td><td>{{ m.machine_type }}</td>
+          <td class="riskcell">
+            <ng-container *ngIf="m.status === 'ok'; else nm">
+              <div class="bar"><span [style.width]="barWidth(m.failure_probability)" [ngClass]="m.risk_level"></span></div>
+              <span class="num">{{ m.failure_probability! * 100 | number: '1.0-0' }}%</span> <app-tag [kind]="m.risk_level!" [label]="m.risk_level!"></app-tag>
+            </ng-container>
+            <ng-template #nm><span class="muted small">{{ m.status === 'no_model' ? 'train model' : 'no recent data' }}</span></ng-template>
+          </td>
+          <td class="small">{{ m.drivers?.[0]?.text || '–' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel" *ngIf="selected as m">
+  <div class="step"><span>◎</span> {{ m.machine_code }} <small>{{ m.machine_type }} · {{ m.line }}<span *ngIf="m.as_of"> · as of {{ m.as_of | date: 'medium' }}</span></small>
+    <span class="push row-actions tight">
+      <button class="btn small secondary" (click)="maintenance()" [disabled]="!!busy">Record maintenance</button>
+    </span>
+  </div>
+  <div class="charts">
+    <div class="chart-box" *ngIf="probChart">
+      <div class="chart-head"><h3>Failure probability · last 7 days</h3></div>
+      <app-chart [config]="probChart" [height]="240"></app-chart>
+    </div>
+    <div class="chart-box">
+      <div class="chart-head"><h3>Sensor (6 h average)</h3>
+        <select [(ngModel)]="signal" (ngModelChange)="draw()" aria-label="Signal">
+          <option *ngFor="let s of signals | keyvalue" [value]="s.key">{{ s.value }}</option></select></div>
+      <app-chart *ngIf="sensorChart" [config]="sensorChart" [height]="240"></app-chart>
+    </div>
+  </div>
+  <div class="ai-grid">
+    <div>
+      <h4>Why the model is concerned</h4>
+      <ul class="gaps" *ngIf="m.drivers?.length; else nod"><li *ngFor="let d of m.drivers">{{ d.text }} <span class="muted">(z {{ d.z }})</span></li></ul>
+      <ng-template #nod><p class="empty">Sensors are within the healthy range for this machine type.</p></ng-template>
+      <p class="small muted">Drivers = the model's most important features that are furthest from the healthy range for this machine type.</p>
+    </div>
+    <div>
+      <h4>Recent events</h4>
+      <ul class="gaps"><li *ngFor="let e of m.events?.slice(0, 6)"><b>{{ e.event_type }}</b> · {{ e.ts | date: 'medium' }} · {{ e.description }}</li></ul>
+    </div>
+  </div>
+</section>
+
+<section class="panel" *ngIf="findings.length">
+  <div class="step"><span>M</span> Machine evidence <small>use “Investigate” to let the agents plan maintenance and route it for approval</small></div>
+  <app-findings-list [findings]="findings" [highlight]="highlight"></app-findings-list>
+</section>
+
+<section class="panel" *ngIf="data?.model as mm">
+  <details>
+    <summary class="step inline">Feature importance (permutation, test period)</summary>
+    <table class="mini"><tbody><tr *ngFor="let f of mm.importance"><td><code>{{ f.feature }}</code></td><td class="num">{{ f.importance | number: '1.3-3' }}</td></tr></tbody></table>
+  </details>
+</section>
