@@ -16,6 +16,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/app ./app
 COPY backend/data ./data
 COPY --from=web /web/dist/smartfactory-ui ./frontend_dist
-RUN useradd -m appuser
+RUN useradd -m appuser && mkdir -p /data && chown appuser /data
 USER appuser
 CMD exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --workers 1

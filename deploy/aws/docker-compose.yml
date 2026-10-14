@@ -1,0 +1,40 @@
+# SmartFactory AI on a single AWS EC2 instance.
+#   app   – the project's Dockerfile (Angular build + FastAPI) on port 8080 (internal only)
+#   caddy – HTTPS reverse proxy with automatic Let's Encrypt certificates on ports 80/443
+# Start (from this folder):  docker compose up -d --build
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    env_file: app.env
+    environment:
+      # Defaults: SQLite + files on a persistent Docker volume (EC2 disks survive reboots).
+      # Set DATABASE_URL in app.env to use RDS instead.
+      SQLITE_PATH: /data/smartfactory.db
+      LOCAL_STORAGE_DIR: /data/files
+    volumes:
+      - sfdata:/data
+    restart: unless-stopped
+    expose:
+      - "8080"
+
+  caddy:
+    image: caddy:2
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN in .env next to this file, e.g. 13-250-10-20.sslip.io}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+volumes:
+  sfdata:
+  caddy_data:
+  caddy_config:

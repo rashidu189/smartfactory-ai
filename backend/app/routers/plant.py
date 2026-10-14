@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from .. import capacity, db, evidence, machine_health
+from .. import capacity, db, evidence, jobs, machine_health
 from ..agents import audit
 from ..deps import User, current_user, get_session, iso
 from ..validation import read_table
@@ -106,13 +106,28 @@ def record_event(machine_id: int, body: EventIn, s: Session = Depends(get_sessio
 
 
 @router.post("/machines/train")
-def train_model(s: Session = Depends(get_session)):
+def train_model(background: bool = False, s: Session = Depends(get_session)):
+    if background:
+        def task():
+            with db.SessionLocal() as s2:
+                run = machine_health.train(s2)
+                evidence.invalidate()
+                return machine_health._run_dict(run)
+        return {"job": jobs.start("train-model", task)}
     try:
         run = machine_health.train(s)
     except machine_health.NotEnoughData as e:
         raise HTTPException(422, str(e))
     evidence.invalidate()
     return machine_health._run_dict(run)
+
+
+@router.get("/jobs/{job_id}")
+def job_status(job_id: str):
+    j = jobs.get(job_id)
+    if not j:
+        raise HTTPException(404, "Job not found (it may have run on another instance or before a restart).")
+    return j
 
 
 # ---------------- capacity & bottlenecks ----------------

@@ -1,15 +1,18 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, catchError, throwError } from 'rxjs';
+import { Observable, catchError, filter, switchMap, take, takeWhile, throwError, timer } from 'rxjs';
 import {
   Action, ActionStatus, ApiError, AppConfig, AuditEntry, CapacityOverview, ChatTurn, Comparison, CopilotReply, Dataset,
   DatasetListItem, InsightResult, InspectionRecord, IntegrationsOverview, MachinesOverview, MachineStatus, ModelInfo,
   WorkOrder, Workflow,
 } from './models';
+import { API_ORIGIN } from './runtime-config';
+
+interface Job<T> { id: string; status: 'running' | 'done' | 'failed'; result: T | null; error: string | null; elapsed_s: number; }
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
-  private base = '/api';
+  private base = `${API_ORIGIN}/api`;
 
   constructor(private http: HttpClient) {}
 
@@ -69,7 +72,23 @@ export class ApiService {
   }
 
   // ---------- Level 3 ----------
-  loadDemoAll(): Observable<{ datasets: string[] }> { return this.wrap(this.http.post<{ datasets: string[] }>(`${this.base}/demo/load-all`, {})); }
+  /** Long jobs run in the background on the server; we poll so proxies with time limits (Cloudflare ~100 s) are fine. */
+  loadDemoAll(): Observable<{ datasets: string[] }> {
+    return this.runJob<{ datasets: string[] }>(`${this.base}/demo/load-all`);
+  }
+
+  private runJob<T>(url: string): Observable<T> {
+    return this.wrap(this.http.post<{ job: Job<T> }>(url, {}, { params: { background: true } })).pipe(
+      // On Cloud Run the job runs inside the request and comes back already finished.
+      switchMap((r) => r.job.status !== 'running' ? [r.job] : timer(1500, 2000).pipe(
+        switchMap(() => this.wrap(this.http.get<Job<T>>(`${this.base}/jobs/${r.job.id}`))),
+        takeWhile((j) => j.status === 'running', true),
+        filter((j) => j.status !== 'running'),
+        take(1),
+      )),
+      switchMap((j) => (j.status === 'done' ? [j.result as T] : throwError(() => ({ message: j.error || 'Job failed', details: [], status: 500 } as ApiError)))),
+    );
+  }
   simulate(hours: number): Observable<{ accepted: number; until: string }> {
     return this.wrap(this.http.post<{ accepted: number; until: string }>(`${this.base}/demo/simulate`, {}, { params: { hours } }));
   }
@@ -79,7 +98,7 @@ export class ApiService {
   recordMachineEvent(id: number, event_type: 'maintenance' | 'failure', description: string): Observable<unknown> {
     return this.wrap(this.http.post(`${this.base}/machines/${id}/events`, { event_type, description }));
   }
-  trainModel(): Observable<ModelInfo> { return this.wrap(this.http.post<ModelInfo>(`${this.base}/machines/train`, {})); }
+  trainModel(): Observable<ModelInfo> { return this.runJob<ModelInfo>(`${this.base}/machines/train`); }
   uploadFile(kind: 'machines/readings' | 'machines/events' | 'capacity/stations' | 'capacity/work-orders', file: File): Observable<{ rows: number }> {
     const fd = new FormData();
     fd.append('file', file);

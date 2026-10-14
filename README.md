@@ -192,3 +192,6 @@ To retrain the failure model on your own data, it needs at least **3 recorded fa
 - **Demo data:** all demo data is **synthetic**. The model's scores on it show that the pipeline works; they are not a claim about real plant performance.
 - **Not run against real services yet:** this build has been tested with SQLite and mocked Gemini. Run it against your Vertex AI project and a Cloud SQL instance before the demo.
 - **ERP connection:** the system receives data pushed over APIs or Pub/Sub. A connector that pulls data from a specific ERP (for example SAP OData) would be the next step.
+
+Orginal Developer : Rashidu Milan
+Team : NeuralNova

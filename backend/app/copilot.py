@@ -7,7 +7,7 @@ The same tool set is used by the investigation agents (agents.py).
 """
 from __future__ import annotations
 
-from .ai import is_configured, model_name
+from .ai import is_configured, make_client, model_name
 from .evidence import ID_RE
 
 SYSTEM = """You are SmartFactory Copilot, an operations assistant for a factory production manager.
@@ -151,7 +151,7 @@ def valid_ids(analysis: dict | None, plant: dict) -> set[str]:
 
 def chat(analysis: dict | None, plant: dict, actions: list[dict], history: list[dict], message: str) -> dict:
     if not is_configured():
-        raise CopilotUnavailable("The copilot needs Gemini. Configure Vertex AI or GEMINI_API_KEY.")
+        raise CopilotUnavailable("The copilot needs Gemini. Set GEMINI_API_KEY in backend/.env (or Cloud Run env vars) and restart the backend. Check with: python -m app.check_gemini")
     from google import genai
     from google.genai import types
 
@@ -162,7 +162,7 @@ def chat(analysis: dict | None, plant: dict, actions: list[dict], history: list[
                 for h in history[-MAX_TURNS:]]
     contents.append(types.Content(role="user", parts=[types.Part.from_text(text=message)]))
 
-    client = genai.Client()
+    client = make_client()
     resp = client.models.generate_content(
         model=model_name(),
         contents=contents,

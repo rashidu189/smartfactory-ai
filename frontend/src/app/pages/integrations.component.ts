@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ApiService } from '../core/api.service';
 import { ApiError, IntegrationsOverview } from '../core/models';
 import { UserService } from '../core/user.service';
+import { API_ORIGIN } from '../core/runtime-config';
 
 @Component({
   selector: 'app-integrations',
@@ -14,7 +15,7 @@ export class IntegrationsComponent implements OnInit {
   newKey: string | null = null;
   error: string | null = null;
   simMsg: string | null = null;
-  readonly origin = location.origin;
+  readonly origin = API_ORIGIN || location.origin;
 
   constructor(private api: ApiService, public users: UserService) {}
 

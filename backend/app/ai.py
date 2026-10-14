@@ -4,10 +4,13 @@ Gemini receives only the validated KPIs and rule-based findings, and must cite
 finding IDs for every statement. Citations are checked after the response; any
 item that cites no real finding is dropped.
 
-Configuration (environment variables, read by the google-genai SDK):
-  Gemini API:  GEMINI_API_KEY=...
-  Vertex AI:   GOOGLE_GENAI_USE_VERTEXAI=true, GOOGLE_CLOUD_PROJECT=..., GOOGLE_CLOUD_LOCATION=...
-  Model:       GEMINI_MODEL (default gemini-2.5-flash)
+Configuration (environment variables). The mode is chosen automatically (see gemini_settings):
+  Gemini API key (AI Studio, "AIza…"):   GEMINI_API_KEY=...
+  Vertex AI express-mode key ("AQ.…"):   GEMINI_API_KEY=...            (detected from the prefix)
+  Vertex AI with a project (Cloud Run):  GOOGLE_GENAI_USE_VERTEXAI=true, GOOGLE_CLOUD_PROJECT=..., GOOGLE_CLOUD_LOCATION=...
+  Force a mode:                          GEMINI_AUTH=api_key | vertex_express | vertex
+  Model:                                 GEMINI_MODEL (default gemini-2.5-flash)
+Check your setup with:  python -m app.check_gemini
 """
 from __future__ import annotations
 
@@ -21,10 +24,48 @@ from pydantic import BaseModel, Field
 log = logging.getLogger("smartfactory.ai")
 
 DEFAULT_MODEL = "gemini-2.5-flash"
-# Default to Vertex AI when running on Google Cloud with a project set and no API key.
-if (os.getenv("GOOGLE_CLOUD_PROJECT") and not os.getenv("GEMINI_API_KEY")
-        and not os.getenv("GOOGLE_API_KEY") and "GOOGLE_GENAI_USE_VERTEXAI" not in os.environ):
-    os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "true"
+_PLACEHOLDERS = {"", "your-project-id", "my-project-id", "project-id", "your_project_id"}
+_TRUE = ("1", "true", "yes")
+
+
+def gemini_settings() -> dict:
+    """Decide how to reach Gemini from the environment. Returns mode = api_key | vertex_express | vertex | None."""
+    key = (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or "").strip()
+    vertex_flag = os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "").strip().lower() in _TRUE
+    project = (os.getenv("GOOGLE_CLOUD_PROJECT") or "").strip()
+    project = None if project.lower() in _PLACEHOLDERS else project
+    location = (os.getenv("GOOGLE_CLOUD_LOCATION") or "us-central1").strip()
+    forced = os.getenv("GEMINI_AUTH", "").strip().lower()
+    if forced in ("api_key", "vertex_express", "vertex"):
+        mode = forced
+    elif vertex_flag and project:
+        mode = "vertex"
+    elif key and (vertex_flag or key.startswith("AQ.")):
+        mode = "vertex_express"          # Google Cloud / Vertex AI express-mode API key
+    elif key:
+        mode = "api_key"                 # Google AI Studio key
+    elif project and os.getenv("K_SERVICE"):
+        mode = "vertex"                  # on Cloud Run with a project and no key: use the service account
+    else:
+        mode = None
+    if mode in ("api_key", "vertex_express") and not key:
+        mode = None
+    if mode == "vertex" and not project:
+        mode = None
+    return {"mode": mode, "key": key, "project": project, "location": location}
+
+
+def make_client():
+    """Gemini client built from explicit settings (explicit arguments override any confusing env vars)."""
+    from google import genai
+    st = gemini_settings()
+    if st["mode"] == "api_key":
+        return genai.Client(vertexai=False, api_key=st["key"])
+    if st["mode"] == "vertex_express":
+        return genai.Client(vertexai=True, api_key=st["key"])
+    if st["mode"] == "vertex":
+        return genai.Client(vertexai=True, project=st["project"], location=st["location"])
+    raise RuntimeError("Gemini is not configured. Set GEMINI_API_KEY (see python -m app.check_gemini).")
 
 
 class Insight(BaseModel):
@@ -71,9 +112,11 @@ Strict rules:
 
 
 def is_configured() -> bool:
-    if os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "").lower() in ("1", "true", "yes"):
-        return True
-    return bool(os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"))
+    return gemini_settings()["mode"] is not None
+
+
+def mode() -> str | None:
+    return gemini_settings()["mode"]
 
 
 def model_name() -> str:
@@ -143,7 +186,7 @@ def generate(analysis: dict, question: str | None = None) -> dict:
         return {
             "source": "rules",
             "model": None,
-            "note": "Gemini is not configured (set GEMINI_API_KEY or Vertex AI variables). "
+            "note": "Gemini is not configured (set GEMINI_API_KEY and restart the backend). "
                     "Showing a rule-based summary instead.",
             "report": fallback_report(analysis).model_dump(),
         }
@@ -152,7 +195,7 @@ def generate(analysis: dict, question: str | None = None) -> dict:
         from google import genai
         from google.genai import types
 
-        client = genai.Client()
+        client = make_client()
         payload = build_payload(analysis, question)
         resp = client.models.generate_content(
             model=model_name(),

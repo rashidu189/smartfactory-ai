@@ -1,0 +1,59 @@
+# Render Blueprint: Angular Static Site + Python API + PostgreSQL.
+# Render dashboard → New → Blueprint → pick this repository.
+# You will be asked for the values marked "sync: false" (GEMINI_API_KEY, CORS_ORIGINS, API_BASE_URL).
+services:
+  # ---------------- Backend: FastAPI ----------------
+  - type: web
+    name: smartfactory-api
+    runtime: python
+    rootDir: backend
+    plan: free                       # free instances sleep after ~15 min idle; "starter" stays awake
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: DATABASE_URL
+        fromDatabase:
+          name: smartfactory-db
+          property: connectionString
+      - key: STORAGE_BACKEND          # keep models, uploads and photos in the database (Render disk is wiped on restart)
+        value: db
+      - key: GEMINI_API_KEY           # AI Studio ("AIza…") or Vertex express ("AQ.…") key — entered in the dashboard
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: CORS_ORIGINS             # the frontend address, e.g. https://smartfactory-web.onrender.com
+        sync: false
+      - key: INTEGRATION_API_KEY      # bootstrap key for the IoT/ERP endpoints
+        generateValue: true
+      - key: LOG_LEVEL
+        value: INFO
+
+  # ---------------- Frontend: Angular static site ----------------
+  - type: web
+    name: smartfactory-web
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npx ng build && node scripts/write-config.js
+    staticPublishPath: dist/smartfactory-ui
+    routes:
+      - type: rewrite                # Angular routes (/overview, /machines…) → index.html
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /config.js
+        name: Cache-Control
+        value: no-cache
+    envVars:
+      - key: NODE_VERSION             # Angular 14 needs Node 16/18
+        value: "18"
+      - key: API_BASE_URL             # the backend address, e.g. https://smartfactory-api.onrender.com
+        sync: false
+
+databases:
+  - name: smartfactory-db
+    plan: free
+    databaseName: smartfactory
+    user: smartfactory

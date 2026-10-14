@@ -4,6 +4,7 @@ import { Subscription } from 'rxjs';
 import { ApiService } from '../core/api.service';
 import { ApiError, InspectionRecord } from '../core/models';
 import { StateService } from '../core/state.service';
+import { apiUrl } from '../core/runtime-config';
 
 @Component({
   selector: 'app-inspection',
@@ -80,6 +81,8 @@ export class InspectionComponent implements OnInit, OnDestroy {
       finding_ids: r.finding_id ? [r.finding_id] : [], source: 'vision',
     }).subscribe(() => { this.addedAction = true; this.state.refreshActions(); });
   }
+
+  abs(u: string): string { return apiUrl(u); }
 
   sevClass(s: string): string { return s === 'critical' || s === 'major' ? 'critical' : s === 'minor' ? 'warning' : 'ok'; }
 }

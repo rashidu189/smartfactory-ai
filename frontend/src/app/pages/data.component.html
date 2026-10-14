@@ -1,7 +1,7 @@
 <section class="panel demo-panel">
   <div class="step"><span>★</span> Full demo <small>all features with SYNTHETIC data</small></div>
   <p>Loads two production periods (before / after corrective actions), 60 days of sensor data from 12 machines with failure history,
-    trains the failure-prediction model, and loads station records and ERP work orders. Takes about 20–40 seconds.</p>
+    trains the failure-prediction model, and loads station records and ERP work orders. Takes 20 seconds to a few minutes depending on the server (runs in the background).</p>
   <button class="btn primary" type="button" (click)="demoAll()" [disabled]="busyAll || busy">
     <span *ngIf="busyAll" class="spinner"></span>{{ busyAll ? 'Loading data and training model…' : 'Load full demo' }}</button>
 </section>

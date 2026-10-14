@@ -30,7 +30,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from . import copilot, db
-from .ai import is_configured, model_name
+from .ai import is_configured, make_client, model_name
 
 log = logging.getLogger("smartfactory.agents")
 
@@ -202,7 +202,7 @@ def _gemini_investigate(root, analysis, plant, actions, valid) -> tuple[Investig
 
     tool_log: list[dict] = []
     tools = copilot.build_tools(analysis, plant, actions, tool_log)
-    client = genai.Client()
+    client = make_client()
     task = (f"Investigate evidence item {root['id']} ({root['category']}, {root['severity']}) on {root['line']}: "
             f"{root['title']}. Evidence: {root['evidence']}")
     notes = client.models.generate_content(
@@ -222,7 +222,7 @@ def _gemini_plan(root, inv: Investigation) -> Plan:
     from google import genai
     from google.genai import types
 
-    client = genai.Client()
+    client = make_client()
     resp = client.models.generate_content(
         model=model_name(),
         contents="Root evidence:\n" + json.dumps({k: root[k] for k in ("id", "category", "severity", "line", "title", "evidence")})

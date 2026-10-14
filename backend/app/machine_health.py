@@ -210,8 +210,8 @@ def train(s: Session, horizon: int = HORIZON_H) -> db.ModelRun:
         "test_positive_hours": int(y.sum()),
         **_event_metrics(test_df, p, thr, fails, horizon),
     }
-    sample = test_df.sample(min(len(test_df), 3000), random_state=0)
-    pi = permutation_importance(m, sample[cols], sample["label"], scoring="average_precision", n_repeats=5, random_state=0)
+    sample = test_df.sample(min(len(test_df), 2000), random_state=0)
+    pi = permutation_importance(m, sample[cols], sample["label"], scoring="average_precision", n_repeats=3, random_state=0)
     importance = sorted(({"feature": c, "importance": round(float(v), 4)} for c, v in zip(cols, pi.importances_mean)),
                         key=lambda r: -r["importance"])[:15]
 
@@ -230,7 +230,7 @@ def train(s: Session, horizon: int = HORIZON_H) -> db.ModelRun:
                       importance_json=json.dumps(importance), features_json=json.dumps(cols), model_uri="",
                       data_from=data["ts"].min().to_pydatetime(), data_to=feats["ts"].max().to_pydatetime())
     s.add(run)
-    s.flush()
+    s.commit()   # commit first: storage may write to the same database (STORAGE_BACKEND=db)
     run.model_uri = storage.save(f"models/failure_model_{run.id}.joblib", buf.getvalue(), "application/octet-stream")
     s.commit()
     _model_cache[run.id] = {"model": final, "cols": cols, "ref": ref}
@@ -239,7 +239,7 @@ def train(s: Session, horizon: int = HORIZON_H) -> db.ModelRun:
 
 
 def latest_run(s: Session) -> db.ModelRun | None:
-    return s.scalars(sa.select(db.ModelRun).order_by(db.ModelRun.id.desc()).limit(1)).first()
+    return s.scalars(sa.select(db.ModelRun).where(db.ModelRun.model_uri != "").order_by(db.ModelRun.id.desc()).limit(1)).first()
 
 
 def _load_model(run: db.ModelRun) -> dict:

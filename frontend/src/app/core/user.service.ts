@@ -2,6 +2,7 @@ import { HttpEvent, HttpHandler, HttpInterceptor, HttpRequest } from '@angular/c
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Role } from './models';
+import { API_ORIGIN } from './runtime-config';
 
 export interface CurrentUser { name: string; role: Role; }
 
@@ -39,7 +40,7 @@ function load(): CurrentUser {
 export class UserHeaderInterceptor implements HttpInterceptor {
   constructor(private users: UserService) {}
   intercept(req: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
-    if (!req.url.startsWith('/api/')) return next.handle(req);
+    if (!req.url.startsWith(`${API_ORIGIN}/api/`)) return next.handle(req);
     const u = this.users.user;
     // Header values must be ISO-8859-1; encode non-Latin names.
     const name = /^[\x20-\x7E]*$/.test(u.name) ? u.name : encodeURIComponent(u.name);

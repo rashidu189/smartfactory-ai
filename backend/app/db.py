@@ -4,7 +4,8 @@ Connection is chosen from environment variables, in this order:
   1. CLOUD_SQL_INSTANCE=project:region:instance  (+ DB_USER, DB_PASS, DB_NAME)
      -> Cloud SQL Python Connector (pytds driver). Recommended on Cloud Run.
   2. DATABASE_URL, e.g. mssql+pymssql://user:pass@host:1433/smartfactory
-     -> any SQL Server reachable over TCP (local SQL Server, SSMS-managed instance).
+     -> any SQL Server reachable over TCP (local SQL Server, SSMS-managed instance, Azure SQL),
+     or postgresql://user:pass@host:5432/db (e.g. Render PostgreSQL; the psycopg 3 driver is used).
   3. Nothing set -> local SQLite file (development only).
 """
 from __future__ import annotations
@@ -263,6 +264,24 @@ class AuditLog(Base):
     detail: Mapped[str] = mapped_column(sa.Unicode(1000), default="")
 
 
+def normalise_url(url: str) -> str:
+    """Hosting providers (Render, Heroku…) give postgres://… URLs; SQLAlchemy needs a driver name."""
+    url = url.strip()
+    for prefix in ("postgres://", "postgresql://"):
+        if url.startswith(prefix):
+            return "postgresql+psycopg://" + url[len(prefix):]
+    return url
+
+
+class StoredFile(Base):
+    """File storage inside the database (STORAGE_BACKEND=db) for hosts without persistent disks."""
+    __tablename__ = "stored_files"
+    path: Mapped[str] = mapped_column(sa.Unicode(400), primary_key=True)
+    content_type: Mapped[str] = mapped_column(sa.String(100))
+    data: Mapped[bytes] = mapped_column(sa.LargeBinary().with_variant(mssql.VARBINARY("max"), "mssql"))
+    created_at: Mapped[datetime] = mapped_column(sa.DateTime, default=utcnow)
+
+
 def _make_engine() -> sa.Engine:
     instance = os.getenv("CLOUD_SQL_INSTANCE")
     if instance:
@@ -279,9 +298,9 @@ def _make_engine() -> sa.Engine:
             )
         return sa.create_engine("mssql+pytds://", creator=creator, pool_pre_ping=True, pool_size=5, max_overflow=2)
 
-    url = os.getenv("DATABASE_URL")
+    url = normalise_url(os.getenv("DATABASE_URL", ""))
     if url:
-        return sa.create_engine(url, pool_pre_ping=True)
+        return sa.create_engine(url, pool_pre_ping=True, pool_recycle=280)
 
     path = os.getenv("SQLITE_PATH", "smartfactory_dev.db")
     eng = sa.create_engine(f"sqlite:///{path}", connect_args={"check_same_thread": False})

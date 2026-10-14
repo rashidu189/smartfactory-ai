@@ -46,13 +46,24 @@ def health():
 @app.get("/api/config")
 def config():
     return {"gemini_configured": ai.is_configured(), "model": ai.model_name() if ai.is_configured() else None,
-            "vertex_ai": os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "").lower() in ("1", "true"),
+            "vertex_ai": ai.mode() in ("vertex", "vertex_express"), "gemini_mode": ai.mode(),
             "database": db.backend_name(), "storage": storage.backend_name(),
             "required_columns": REQUIRED_COLUMNS, "optional_columns": OPTIONAL_COLUMNS,
             "thresholds": kpis.asdict(kpis.Thresholds()),
             "roles": [{"id": "operator", "label": "Operator"}, {"id": "engineer", "label": "Engineer"},
                       {"id": "supervisor", "label": "Supervisor"}, {"id": "plant_manager", "label": "Plant manager"}]}
 
+
+# CORS: only needed when the website is hosted on a different address than this API
+# (e.g. Firebase Hosting → Cloud Run). Comma-separated list, e.g.
+#   CORS_ORIGINS=https://smartfactory-ai.web.app,https://smartfactory-ai.firebaseapp.com
+_cors = [o.strip().rstrip("/") for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()]
+if _cors:
+    from fastapi.middleware.cors import CORSMiddleware
+    app.add_middleware(CORSMiddleware, allow_origins=_cors, allow_methods=["*"],
+                       allow_headers=["Content-Type", "X-User-Name", "X-User-Role", "X-API-Key"],
+                       expose_headers=["Content-Disposition"], max_age=3600)
+    log.info("CORS enabled for: %s", ", ".join(_cors))
 
 for r in (production.router, plant.router, workflows.router, integrations.router, demo.router):
     app.include_router(r)

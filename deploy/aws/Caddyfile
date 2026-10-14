@@ -1,0 +1,10 @@
+# Caddy gets and renews a free HTTPS certificate for $DOMAIN automatically.
+{$DOMAIN} {
+	encode gzip
+	reverse_proxy app:8080 {
+		# Gemini agent / copilot calls can take a while
+		transport http {
+			read_timeout 300s
+		}
+	}
+}

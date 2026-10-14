@@ -49,7 +49,7 @@
     <div class="step"><span>☰</span> Inspection history</div>
     <div class="gallery">
       <div class="thumb" *ngFor="let h of history">
-        <img [src]="h.image_url" [alt]="'Inspection ' + h.seq" loading="lazy">
+        <img [src]="abs(h.image_url)" [alt]="'Inspection ' + h.seq" loading="lazy">
         <div class="meta"><app-tag [kind]="h.defect_detected ? sevClass(h.severity) : 'ok'" [label]="h.defect_detected ? h.severity : 'ok'"></app-tag>
           <span class="small">{{ h.line }}</span><app-cites *ngIf="h.finding_id" [ids]="[h.finding_id]"></app-cites></div>
         <div class="small">{{ h.defect_type.replace('_', ' ') }} · {{ h.created_at | date: 'short' }}</div>

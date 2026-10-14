@@ -7,7 +7,7 @@ import sqlalchemy as sa
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from .. import capacity, db, demo_data, evidence, integrations, machine_health
+from .. import capacity, db, demo_data, evidence, integrations, jobs, machine_health
 from ..deps import get_session
 from ..validation import read_table, validate
 from .plant import ingest_stations, upsert_orders
@@ -18,7 +18,17 @@ DATA = Path(__file__).resolve().parent.parent.parent / "data"
 
 
 @router.post("/load-all")
-def load_all(s: Session = Depends(get_session)):
+def load_all(background: bool = False, s: Session = Depends(get_session)):
+    """background=true returns a job immediately (poll GET /api/jobs/{id}); use behind proxies with time limits."""
+    if background:
+        def task():
+            with db.SessionLocal() as s2:
+                return _load_all(s2)
+        return {"job": jobs.start("demo-load-all", task)}
+    return _load_all(s)
+
+
+def _load_all(s: Session) -> dict:
     out = {}
     # 1. Production: two periods (before / after corrective actions)
     ids = []

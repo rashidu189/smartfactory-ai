@@ -10,7 +10,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from .ai import is_configured, model_name
+from .ai import is_configured, make_client, model_name
 
 ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp"}
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
@@ -49,11 +49,11 @@ class VisionUnavailable(Exception):
 
 def inspect(image: bytes, mime: str, line: str, part: str, notes: str) -> tuple[InspectionResult, str]:
     if not is_configured():
-        raise VisionUnavailable("Visual inspection needs Gemini. Configure Vertex AI or GEMINI_API_KEY.")
+        raise VisionUnavailable("Visual inspection needs Gemini. Set GEMINI_API_KEY in backend/.env (or Cloud Run env vars) and restart the backend. Check with: python -m app.check_gemini")
     from google import genai
     from google.genai import types
 
-    client = genai.Client()
+    client = make_client()
     context = f"line={line!r}, part={part!r}, notes={notes!r}"
     resp = client.models.generate_content(
         model=model_name(),
