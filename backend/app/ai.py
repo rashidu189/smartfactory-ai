@@ -204,7 +204,6 @@ def generate(analysis: dict, question: str | None = None) -> dict:
                 system_instruction=SYSTEM_PROMPT,
                 response_mime_type="application/json",
                 response_schema=AIReport,
-                temperature=0.2,
             ),
         )
         report = resp.parsed if isinstance(resp.parsed, AIReport) else AIReport.model_validate_json(resp.text)
